@@ -4,60 +4,30 @@ using System.Threading.Tasks;
 using Tournament.Core.Entities;
 using Tournament.Core.Interfaces;
 using Tournament.Data.Data;
+using Tournament.Data.Repositories;
 
-public class GameRepository : IGameRepository
+public class GameRepository : RepositoryBase<Game>, IGameRepository
 {
-    private readonly TournamentApiContext _context;
+    //private readonly TournamentApiContext _context;
 
-    public GameRepository(TournamentApiContext context)
+    public GameRepository(TournamentApiContext context) : base(context)
     {
-        _context = context;
+        //_context = context;
     }
 
-    public async Task<IEnumerable<Game>> GetAllAsync()
+    public async Task<IEnumerable<Game>> GetAllAsync(int tournamentId, bool trackChanges = false)
     {
-        return await _context.Games.ToListAsync();
+        return await FindAll(trackChanges).Where(g => g.TournamentId == tournamentId).ToListAsync();
     }
 
-    public async Task<Game?> GetByIdAsync(int id)
+    public async Task<Game?> GetByIdAsync(int id, bool trackChanges)
     {
-        return await _context.Games.FindAsync(id);
+        return await FindByCondition(g => g.Id.Equals(id), trackChanges).FirstOrDefaultAsync(); ;
     }
 
-    public async Task<Game> AddAsync(Game game)
+    public async Task<IEnumerable<Game>> SearchByTitleAsync(string title, bool trackChanges)
     {
-        await _context.Games.AddAsync(game);
-        return game;
+        return await FindByCondition(g => g.Title.ToLower().Contains(title.ToLower()), trackChanges).ToListAsync(); 
     }
 
-    public async Task<bool> UpdateAsync(Game game)
-    {
-        var existingGame = await _context.Games.FindAsync(game.Id);
-        if (existingGame == null)
-            return false;
-
-        // Update properties
-        existingGame.Title = game.Title;
-        existingGame.Time = game.Time;
-        existingGame.TournamentId = game.TournamentId;
-
-        return true;
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var game = await _context.Games.FindAsync(id);
-        if (game != null)
-        {
-            _context.Games.Remove(game);
-            return true;
-        }
-        return false;
-
-    }
-
-    public async Task<bool> ExistsAsync(int id)
-    {
-        return await _context.Games.AnyAsync(g => g.Id == id);
-    }
 }

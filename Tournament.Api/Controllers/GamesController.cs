@@ -22,28 +22,31 @@ public class GameController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GameDto>>> GetGames()
+    public async Task<ActionResult<IEnumerable<GameDto>>> GetGames(int tournamentId)
     {
-        var games = await _unitOfWork.GameRepository.GetAllAsync();
+        var games = await _unitOfWork.GameRepository.GetAllAsync(tournamentId, trackChanges:false);
         var gamesDtos = _mapper.Map<IEnumerable<GameDto>>(games);
         return Ok(gamesDtos);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Game>> GetGame(int id)
+    public async Task<ActionResult<GameDto>> GetGame(int id)
     {
-        var game = await _unitOfWork.GameRepository.GetByIdAsync(id);
+        var game = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:false);
         if (game == null)
             return NotFound();
         var gameDto = _mapper.Map<GameDto>(game);
-        return Ok(game);
+        return Ok(gameDto);
     }
+
 
     [HttpPost]
     public async Task<ActionResult<GameDto>> PostGame(GameCreateDto gameCreateDto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
         var game = _mapper.Map<Game>(gameCreateDto);
-        await _unitOfWork.GameRepository.AddAsync(game);
+        _unitOfWork.GameRepository.Create(game);
         await _unitOfWork.CompleteAsync();
 
         var gameDto = _mapper.Map<GameDto>(game);
@@ -53,14 +56,20 @@ public class GameController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> PutGame(int id, GameUpdateDto gameUpdateDto)
     {
-        if (!await _unitOfWork.GameRepository.ExistsAsync(id))
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+        if (id != gameUpdateDto.Id)
+        {
+            return BadRequest();
+        }
+
+        var existingGame = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:true);
+        if (existingGame == null)
+        {
             return NotFound();
+        }
 
-        var game = _mapper.Map<Game>(gameUpdateDto);
-        game.Id = id;
-
-        var success = await _unitOfWork.GameRepository.UpdateAsync(game);
-        if (!success) return StatusCode(500, "Could not update the game.");
+        var game = _mapper.Map(gameUpdateDto, existingGame);
 
         await _unitOfWork.CompleteAsync();
         return NoContent();
@@ -69,10 +78,15 @@ public class GameController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteGame(int id)
     {
-        var success = await _unitOfWork.GameRepository.DeleteAsync(id);
-        if (!success) return NotFound();
+        var existingGame = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:false);
+        if (existingGame == null)
+        {
+            return NotFound();
+        }
 
+        _unitOfWork.GameRepository.Delete(existingGame);
         await _unitOfWork.CompleteAsync();
+
         return NoContent();
     }
 
@@ -82,11 +96,11 @@ public class GameController : ControllerBase
         if (patchDoc == null)
             return BadRequest();
 
-        var tournament = await _unitOfWork.TournamentDetailsRepository.GetByIdAsync(tournamentId, includeGames: false);
+        var tournament = await _unitOfWork.TournamentDetailsRepository.GetByIdAsync(tournamentId, includeGames: false, trackChanges:true);
         if (tournament == null)
             return NotFound();
 
-        var gameToPatch = await _unitOfWork.GameRepository.GetByIdAsync(id);
+        var gameToPatch = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:true);
 
         if (gameToPatch == null || gameToPatch.TournamentId != tournamentId) 
             return NotFound();
@@ -95,10 +109,8 @@ public class GameController : ControllerBase
 
         patchDoc.ApplyTo(dto, ModelState);
 
-        if (!ModelState.IsValid)
-        {
-            return UnprocessableEntity(ModelState);
-        }
+        if (!TryValidateModel(dto))
+            return ValidationProblem(ModelState);
 
         _mapper.Map(dto, gameToPatch);
 
@@ -106,5 +118,20 @@ public class GameController : ControllerBase
         await _unitOfWork.CompleteAsync();
 
         return NoContent();
+    }
+
+    [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<GameDto>>> SearchTournamentsByTitle([FromQuery] string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return BadRequest("Title parameter is required.");
+
+        var games = await _unitOfWork.GameRepository.SearchByTitleAsync(title, trackChanges: false);
+
+        if (games == null || !games.Any())
+            return NotFound();
+
+        var gameDtos = _mapper.Map<IEnumerable<GameDto>>(games);
+        return Ok(gameDtos);
     }
 }

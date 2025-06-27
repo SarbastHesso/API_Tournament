@@ -9,9 +9,9 @@ namespace Tournament.Core.Interfaces;
 
 public interface ITournamentDetailsRepository
 {
-    Task<IEnumerable<TournamentDetails>> GetAllAsync(bool includeGames);
-    Task<TournamentDetails?> GetByIdAsync(int id, bool includeGames);
-    Task<TournamentDetails> AddAsync(TournamentDetails tournament);
-    Task<bool> UpdateAsync(TournamentDetails tournament);
-    Task<bool> DeleteAsync(int id);
+    Task<IEnumerable<TournamentDetails>> GetAllAsync(bool includeGames, bool trackChanges);
+    Task<TournamentDetails?> GetByIdAsync(int id, bool includeGames, bool trackChanges);
+    void Create(TournamentDetails tournamentDetails);
+    void Delete(TournamentDetails tournamentDetails);
+    Task<IEnumerable<TournamentDetails>> SearchByTitleAsync(string title, bool includeGames, bool trackChanges);
 }

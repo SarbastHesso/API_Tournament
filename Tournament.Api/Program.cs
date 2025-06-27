@@ -26,9 +26,9 @@ namespace Tournament.Api
             builder.Services.AddControllers(opt => opt.ReturnHttpNotAcceptable = true)
                 .AddNewtonsoftJson()
                 .AddXmlDataContractSerializerFormatters();
-            builder.Services.AddScoped<ITournamentDetailsRepository, TournamentDetailsRepository>();
-            builder.Services.AddScoped<IGameRepository, GameRepository>();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            builder.Services.ConfigureCors();
 
             var app = builder.Build();
 

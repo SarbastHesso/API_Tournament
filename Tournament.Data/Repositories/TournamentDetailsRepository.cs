@@ -5,62 +5,33 @@ using Tournament.Data.Data;
 
 namespace Tournament.Data.Repositories;
 
-public class TournamentDetailsRepository : ITournamentDetailsRepository
+public class TournamentDetailsRepository : RepositoryBase<TournamentDetails>, ITournamentDetailsRepository
 {
-    private readonly TournamentApiContext _context;
 
-    public TournamentDetailsRepository(TournamentApiContext context)
+    public TournamentDetailsRepository(TournamentApiContext context): base(context)
     {
-        _context = context;
     }
 
-    public async Task<IEnumerable<TournamentDetails>> GetAllAsync(bool includeGames=false)
+    public async Task<IEnumerable<TournamentDetails>> GetAllAsync(bool includeGames=false, bool trackChanges = false)
     {
         return includeGames 
-            ? await _context.Tournaments.Include(t => t.Games).ToListAsync() 
-            : await _context.Tournaments.ToListAsync();
+            ? await FindAll(trackChanges).Include(t => t.Games).ToListAsync() 
+            : await FindAll(trackChanges).ToListAsync();
     }
 
-    public async Task<TournamentDetails?> GetByIdAsync(int id, bool includeGames=false)
+    public async Task<TournamentDetails?> GetByIdAsync(int id, bool includeGames=false, bool trackChanges = false)
     {
         return includeGames
-            ? await _context.Tournaments.Include(t => t.Games).FirstOrDefaultAsync(t => t.Id.Equals(id))
-            : await _context.Tournaments.FirstOrDefaultAsync(t => t.Id.Equals(id));
+            ? await FindByCondition(t => t.Id.Equals(id), trackChanges).Include(t => t.Games).FirstOrDefaultAsync()
+            : await FindByCondition(t => t.Id.Equals(id), trackChanges).FirstOrDefaultAsync();
     }
 
-    public async Task<TournamentDetails> AddAsync(TournamentDetails tournament)
+    public async Task<IEnumerable<TournamentDetails>> SearchByTitleAsync(string title, bool includeGames=false, bool trackChanges = false)
     {
-        await _context.Tournaments.AddAsync(tournament);
-        return tournament;
+        return includeGames
+            ? await FindByCondition(t => t.Title.ToLower().Contains(title.ToLower()), trackChanges).Include(t => t.Games).ToListAsync()
+            : await FindByCondition(t => t.Title.ToLower().Contains(title.ToLower()), trackChanges).ToListAsync();
     }
 
-    public async Task<bool> UpdateAsync(TournamentDetails tournament)
-    {
-        var existingTournament = await _context.Tournaments
-            .FirstOrDefaultAsync(t => t.Id.Equals(tournament.Id));
-
-        if (existingTournament == null)
-        {
-            return false; // not found
-        }
-
-        // Update fields manually (safer, prevents overwriting everything)
-        existingTournament.Title = tournament.Title;
-        existingTournament.StartDate = tournament.StartDate;
-        // add any other fields here
-
-        return true; // success
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var tournament = await _context.Tournaments.FindAsync(id);
-        if (tournament != null)
-        {
-            _context.Tournaments.Remove(tournament);
-            return true;
-        }
-        return false;
-    }
 }
 

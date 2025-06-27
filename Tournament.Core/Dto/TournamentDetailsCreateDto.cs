@@ -11,7 +11,7 @@ namespace Tournament.Core.Dto
     {
         [Required]
         [StringLength(100, MinimumLength = 2)]
-        public string Title { get; init; }
+        public string Title { get; init; } = null!;
 
         [Required]
         public DateTime StartDate { get; init; }

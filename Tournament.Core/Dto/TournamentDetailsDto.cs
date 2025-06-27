@@ -10,7 +10,7 @@ namespace Tournament.Core.Dto;
 public record TournamentDetailsDto
 {
     public int Id { get; init; }
-    public string Title { get; init; }
+    public string Title { get; init; } = null!;
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public IEnumerable<GameDto>? Games { get; init; }

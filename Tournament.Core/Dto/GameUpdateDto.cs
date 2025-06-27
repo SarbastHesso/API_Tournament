@@ -9,6 +9,8 @@ namespace Tournament.Core.Dto
 {
     public record GameUpdateDto
     {
+        public int Id { get; set; }
+
         [Required]
         [StringLength(100, MinimumLength = 3)]
         public string Title { get; init; }

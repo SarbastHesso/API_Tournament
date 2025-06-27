@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using Tournament.Data.Data; 
-using Tournament.Data.Data; 
 
 namespace Tournament.Api.Extensions
 {
