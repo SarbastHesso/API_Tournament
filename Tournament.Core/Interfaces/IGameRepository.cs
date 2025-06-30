@@ -16,9 +16,9 @@ public interface IGameRepository
     //Task<bool> UpdateAsync(Game game);
     //Task<bool> DeleteAsync(int id);
     //Task<bool> ExistsAsync(int id);
-    Task<IEnumerable<Game>> GetAllAsync(int tournamentId, bool trackChanges);
+    Task<IEnumerable<Game>> GetAllAsync(int tournamentId, bool trackChanges=false);
     Task<Game?> GetByIdAsync(int id, bool trackChanges);
-    Task<IEnumerable<Game>> SearchByTitleAsync(string title, bool trackChanges);
+    Task<IEnumerable<Game>> SearchByTitleAsync(int tournamentId, string title,  bool trackChanges=false);
     void Create(Game game);
     void Delete(Game game);
 }

@@ -25,9 +25,11 @@ public class GameRepository : RepositoryBase<Game>, IGameRepository
         return await FindByCondition(g => g.Id.Equals(id), trackChanges).FirstOrDefaultAsync(); ;
     }
 
-    public async Task<IEnumerable<Game>> SearchByTitleAsync(string title, bool trackChanges)
+    public async Task<IEnumerable<Game>> SearchByTitleAsync(int tournamentId, string title,  bool trackChanges)
     {
-        return await FindByCondition(g => g.Title.ToLower().Contains(title.ToLower()), trackChanges).ToListAsync(); 
+        return await FindByCondition(
+        g => g.Title.ToLower().Contains(title.ToLower()) && g.TournamentId == tournamentId,
+        trackChanges).ToListAsync();
     }
 
 }

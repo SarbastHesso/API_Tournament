@@ -30,10 +30,10 @@ public class GameController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<GameDto>> GetGame(int id)
+    public async Task<ActionResult<GameDto>> GetGame(int id, int tournamentId)
     {
         var game = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:false);
-        if (game == null)
+        if (game == null || game.TournamentId != tournamentId)
             return NotFound();
         var gameDto = _mapper.Map<GameDto>(game);
         return Ok(gameDto);
@@ -41,16 +41,17 @@ public class GameController : ControllerBase
 
 
     [HttpPost]
-    public async Task<ActionResult<GameDto>> PostGame(GameCreateDto gameCreateDto)
+    public async Task<ActionResult<GameDto>> PostGame(int tournamentId, GameCreateDto gameCreateDto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
         var game = _mapper.Map<Game>(gameCreateDto);
+        game.TournamentId = tournamentId;
         _unitOfWork.GameRepository.Create(game);
         await _unitOfWork.CompleteAsync();
 
         var gameDto = _mapper.Map<GameDto>(game);
-        return CreatedAtAction(nameof(GetGame), new { id = game.Id }, gameDto);
+        return CreatedAtAction(nameof(GetGame), new { tournamentId = tournamentId, id = game.Id }, gameDto);
     }
 
     [HttpPut("{id}")]
@@ -121,12 +122,12 @@ public class GameController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<GameDto>>> SearchTournamentsByTitle([FromQuery] string title)
+    public async Task<ActionResult<IEnumerable<GameDto>>> SearchTournamentsByTitle(int tournamentId, [FromQuery] string title)
     {
         if (string.IsNullOrWhiteSpace(title))
             return BadRequest("Title parameter is required.");
 
-        var games = await _unitOfWork.GameRepository.SearchByTitleAsync(title, trackChanges: false);
+        var games = await _unitOfWork.GameRepository.SearchByTitleAsync(tournamentId, title, trackChanges: false);
 
         if (games == null || !games.Any())
             return NotFound();

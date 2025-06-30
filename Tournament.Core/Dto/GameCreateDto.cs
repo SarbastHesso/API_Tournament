@@ -16,7 +16,5 @@ namespace Tournament.Core.Dto
         [Required]
         public DateTime Time { get; init; }
 
-        [Required]
-        public int TournamentId { get; init; }
     }
 }

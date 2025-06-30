@@ -19,7 +19,7 @@ public class TournamentDetailsRepository : RepositoryBase<TournamentDetails>, IT
             : await FindAll(trackChanges).ToListAsync();
     }
 
-    public async Task<TournamentDetails?> GetByIdAsync(int id, bool includeGames=false, bool trackChanges = false)
+    public async Task<TournamentDetails?> GetByIdAsync(int id, bool includeGames, bool trackChanges = false)
     {
         return includeGames
             ? await FindByCondition(t => t.Id.Equals(id), trackChanges).Include(t => t.Games).FirstOrDefaultAsync()
