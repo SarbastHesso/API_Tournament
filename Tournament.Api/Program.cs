@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Service.Contracts;
 using System.Threading.Tasks;
 using Tournament.Api.Extensions;
 using Tournament.Core.Interfaces;
 using Tournament.Data.Data;
 using Tournament.Data.Repositories;
+using Tournament.Services;
 
 namespace Tournament.Api
 {
@@ -27,8 +29,11 @@ namespace Tournament.Api
                 .AddNewtonsoftJson()
                 .AddXmlDataContractSerializerFormatters();
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddScoped<IServiceManager, ServiceManager>();
+            
 
             builder.Services.ConfigureCors();
+            builder.Services.ConfigureServiceLayerServices();
 
             var app = builder.Build();
 

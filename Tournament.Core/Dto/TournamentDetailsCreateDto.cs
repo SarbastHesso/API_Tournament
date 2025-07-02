@@ -15,7 +15,6 @@ namespace Tournament.Core.Dto
 
         [Required]
         public DateTime StartDate { get; init; }
-        public DateTime EndDate { get; init; }
         public List<GameCreateDto>? Games { get; init; }
     }
 }
