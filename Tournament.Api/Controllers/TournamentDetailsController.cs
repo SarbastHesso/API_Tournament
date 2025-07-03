@@ -26,16 +26,19 @@ namespace Tournament.Api.Controllers
 
         // GET: api/TournamentDetails
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<TournamentDetailsDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> GetAllTournamentDetails([FromQuery] bool includeGames)
+        [ProducesResponseType(typeof(PagedResult<TournamentDetailsDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResult<TournamentDetailsDto>>> GetAllTournamentDetails(
+            [FromQuery] bool includeGames,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var tournamentsDtos = await _serviceManager.TournamentDetailsService.GetAllAsync(includeGames, trackChanges: false);
-            if (tournamentsDtos == null)
+            var pagedResult = await _serviceManager.TournamentDetailsService.GetAllAsync(includeGames, trackChanges: false, page, pageSize);
+            if (pagedResult == null)
             {
                 return NotFound();
             }
 
-            return Ok(tournamentsDtos);
+            return Ok(pagedResult);
         }
 
         // GET: api/TournamentDetails/5
@@ -132,19 +135,25 @@ namespace Tournament.Api.Controllers
 
         [HttpGet("search")]
         [ProducesResponseType(typeof(IEnumerable<TournamentDetailsDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> SearchTournamentsByTitle([FromQuery] string title, [FromQuery] bool includeGames)
+        public async Task<ActionResult<IEnumerable<TournamentDetailsDto>>> SearchTournamentsByTitle(
+            [FromQuery] string? title,
+            [FromQuery] DateTime? date,
+            [FromQuery] bool includeGames,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+            )
         {
-            if (string.IsNullOrWhiteSpace(title))
-                return BadRequest("Title is required");
+            if (string.IsNullOrWhiteSpace(title) && !date.HasValue)
+                return BadRequest("At least one filter (title or date) must be provided.");
 
-            var tournaments = await _serviceManager.TournamentDetailsService.SearchByTitle(title, includeGames, trackChanges: false);
+            var pagedResult = await _serviceManager.TournamentDetailsService.SearchAsync(title, date, includeGames, trackChanges: false);
 
-            if (tournaments == null)
+            if (pagedResult == null)
             {
                 return NotFound();
             }
 
-            return Ok(tournaments);
+            return Ok(pagedResult);
         }
     }
 }

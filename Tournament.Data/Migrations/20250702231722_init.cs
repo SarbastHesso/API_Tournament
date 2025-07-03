@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Tournament.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "TournamentDetails",
+                name: "Tournaments",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -22,7 +22,7 @@ namespace Tournament.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TournamentDetails", x => x.Id);
+                    table.PrimaryKey("PK_Tournaments", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -33,23 +33,23 @@ namespace Tournament.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Time = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    TournamentId = table.Column<int>(type: "int", nullable: false),
-                    TournamentDetailsId = table.Column<int>(type: "int", nullable: true)
+                    TournamentId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Games", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Games_TournamentDetails_TournamentDetailsId",
-                        column: x => x.TournamentDetailsId,
-                        principalTable: "TournamentDetails",
-                        principalColumn: "Id");
+                        name: "FK_Games_Tournaments_TournamentId",
+                        column: x => x.TournamentId,
+                        principalTable: "Tournaments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Games_TournamentDetailsId",
+                name: "IX_Games_TournamentId",
                 table: "Games",
-                column: "TournamentDetailsId");
+                column: "TournamentId");
         }
 
         /// <inheritdoc />
@@ -59,7 +59,7 @@ namespace Tournament.Data.Migrations
                 name: "Games");
 
             migrationBuilder.DropTable(
-                name: "TournamentDetails");
+                name: "Tournaments");
         }
     }
 }

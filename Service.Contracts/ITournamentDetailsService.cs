@@ -11,14 +11,14 @@ namespace Service.Contracts;
 
 public interface ITournamentDetailsService
 {
-    Task<IEnumerable<TournamentDetailsDto>> GetAllAsync(bool includeGames, bool trackChanges);
+    Task<PagedResult<TournamentDetailsDto>> GetAllAsync(bool includeGames, bool trackChanges, int page = 1, int pageSize = 10);
     Task<TournamentDetailsDto> GetByIdAsync(int id , bool includeGames, bool trackChanges);
     Task<TournamentDetailsDto> CreateAsync(TournamentDetailsCreateDto createDto);
     Task DeleteAsync(int id);
     Task UpdateAsync(int id, TournamentDetailsUpdateDto updatedDto);
     Task<TournamentDetailsUpdateDto> GetPatchedDtoAsync(int id, JsonPatchDocument<TournamentDetailsUpdateDto> patchDoc);
     Task ApplyPatchedDtoAsync(int id, TournamentDetailsUpdateDto patchedDto);
-    Task<IEnumerable<TournamentDetailsDto>> SearchByTitle(string title, bool includeGames, bool trackChanges);
+    Task<PagedResult<TournamentDetailsDto>> SearchAsync(string? title, DateTime? date, bool includeGames, bool trackChanges, int page = 1, int pageSize = 10);
 
 
 }

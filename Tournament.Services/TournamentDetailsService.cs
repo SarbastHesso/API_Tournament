@@ -22,11 +22,30 @@ public class TournamentDetailsService: ITournamentDetailsService
         _mapper = mapper;   
     }
 
-    public async Task<IEnumerable<TournamentDetailsDto>> GetAllAsync(bool includeGames = false, bool trackChanges = false)
+    public async Task<PagedResult<TournamentDetailsDto>> GetAllAsync(bool includeGames = false, bool trackChanges = false, int page = 1, int pageSize = 10)
     {
+        if ( pageSize > 100)
+        {
+            pageSize = 100;
+        }
+
         var tournaments = await _unitOfWork.TournamentDetailsRepository.GetAllAsync(includeGames, trackChanges);
-        var dto = _mapper.Map<IEnumerable<TournamentDetailsDto>>(tournaments);
-        return dto;
+
+        var totalItems = tournaments.Count();
+
+        var pagedTournaments = tournaments
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize);
+
+        var dtos = _mapper.Map<IEnumerable<TournamentDetailsDto>>(pagedTournaments);
+
+        return new PagedResult<TournamentDetailsDto>
+        {
+            Items = dtos,
+            TotalItems = totalItems,
+            PageSize = pageSize,
+            CurrentPage = page
+        };
     }
 
     public async Task<TournamentDetailsDto> GetByIdAsync(int id, bool includeGames = false, bool trackChanges = false)
@@ -93,13 +112,30 @@ public class TournamentDetailsService: ITournamentDetailsService
         await _unitOfWork.CompleteAsync();
     }
 
-    public async Task<IEnumerable<TournamentDetailsDto>> SearchByTitle(string title, bool includeGames = false, bool trackChanges = false)
-    {
-        if (title == null) throw new ArgumentNullException("title");
+    public async Task<PagedResult<TournamentDetailsDto>> SearchAsync(string? title, DateTime? date, bool includeGames = false, bool trackChanges = false, int page = 1, int pageSize = 10)
+    { 
+        if (pageSize > 100)
+        {
+            pageSize = 100;
+        }
+        var tournaments = await _unitOfWork.TournamentDetailsRepository.SearchAsync(title, date, includeGames, trackChanges);
 
-        var tournaments = await _unitOfWork.TournamentDetailsRepository.SearchByTitleAsync(title, includeGames, trackChanges);
-        var dto = _mapper.Map<IEnumerable<TournamentDetailsDto>>(tournaments);
-        return dto;
+        var totalItems = tournaments.Count();
+
+        var pagedTournaments = tournaments
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize);
+
+        var dtos = _mapper.Map<IEnumerable<TournamentDetailsDto>>(pagedTournaments);
+
+        return new PagedResult<TournamentDetailsDto>
+        {
+            Items = dtos,
+            TotalItems = totalItems,
+            PageSize = pageSize,
+            CurrentPage = page
+        };
+
     }
 
 }

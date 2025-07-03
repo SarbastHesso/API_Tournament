@@ -13,5 +13,5 @@ public interface ITournamentDetailsRepository
     Task<TournamentDetails?> GetByIdAsync(int id, bool includeGames, bool trackChanges);
     void Create(TournamentDetails tournamentDetails);
     void Delete(TournamentDetails tournamentDetails);
-    Task<IEnumerable<TournamentDetails>> SearchByTitleAsync(string title, bool includeGames, bool trackChanges);
+    Task<IEnumerable<TournamentDetails>> SearchAsync(string? title, DateTime? date, bool includeGames, bool trackChanges);
 }
