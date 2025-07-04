@@ -86,29 +86,27 @@ public class TournamentDetailsService: ITournamentDetailsService
         _mapper.Map(updateDto, existingTournament);
         await _unitOfWork.CompleteAsync();
     }
-    public async Task<TournamentDetailsUpdateDto> GetPatchedDtoAsync(int id, JsonPatchDocument<TournamentDetailsUpdateDto> patchDoc)
+   
+    public async Task PatchAsync(int id, JsonPatchDocument<TournamentDetailsUpdateDto> patchDoc)
     {
         var entity = await _unitOfWork.TournamentDetailsRepository
-            .GetByIdAsync(id, includeGames: false, trackChanges: true);
-
-        if (entity == null)
-            return null;
-
-        var dto = _mapper.Map<TournamentDetailsUpdateDto>(entity);
-        patchDoc.ApplyTo(dto);
-
-        return dto;
-    }
-
-    public async Task ApplyPatchedDtoAsync(int id, TournamentDetailsUpdateDto patchedDto)
-    {
-        var entity = await _unitOfWork.TournamentDetailsRepository
-            .GetByIdAsync(id, includeGames: false, trackChanges: true);
+            .GetByIdAsync(id,includeGames:false, trackChanges: true);
 
         if (entity == null)
             throw new KeyNotFoundException($"Tournament with id {id} not found");
 
-        _mapper.Map(patchedDto, entity);
+        // Map the tracked entity to a DTO
+        var dto = _mapper.Map<TournamentDetailsUpdateDto>(entity);
+
+        // Apply the patch
+        patchDoc.ApplyTo(dto);
+
+        // Optional: validate DTO here if needed
+        // You can expose a validation method or move this back to controller if necessary
+
+        // Map patched DTO back to the tracked entity
+        _mapper.Map(dto, entity);
+
         await _unitOfWork.CompleteAsync();
     }
 

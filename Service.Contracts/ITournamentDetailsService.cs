@@ -16,8 +16,7 @@ public interface ITournamentDetailsService
     Task<TournamentDetailsDto> CreateAsync(TournamentDetailsCreateDto createDto);
     Task DeleteAsync(int id);
     Task UpdateAsync(int id, TournamentDetailsUpdateDto updatedDto);
-    Task<TournamentDetailsUpdateDto> GetPatchedDtoAsync(int id, JsonPatchDocument<TournamentDetailsUpdateDto> patchDoc);
-    Task ApplyPatchedDtoAsync(int id, TournamentDetailsUpdateDto patchedDto);
+    Task PatchAsync(int id, JsonPatchDocument<TournamentDetailsUpdateDto> patchDoc);
     Task<PagedResult<TournamentDetailsDto>> SearchAsync(string? title, DateTime? date, bool includeGames, bool trackChanges, int page = 1, int pageSize = 10);
 
 

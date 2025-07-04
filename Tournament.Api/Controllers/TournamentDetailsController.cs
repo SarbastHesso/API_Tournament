@@ -33,7 +33,7 @@ namespace Tournament.Api.Controllers
             [FromQuery] int pageSize = 10)
         {
             var pagedResult = await _serviceManager.TournamentDetailsService.GetAllAsync(includeGames, trackChanges: false, page, pageSize);
-            if (pagedResult == null)
+            if (!pagedResult.Items.Any())
             {
                 return NotFound();
             }
@@ -75,9 +75,9 @@ namespace Tournament.Api.Controllers
                 await _serviceManager.TournamentDetailsService.UpdateAsync(id, updateDto);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound();
+                return NotFound(ex.Message);
             }
             
         }
@@ -106,31 +106,35 @@ namespace Tournament.Api.Controllers
                 await _serviceManager.TournamentDetailsService.DeleteAsync(id);
                 return NoContent();
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound();
+                return NotFound(ex.Message);
             }
         }
 
         [HttpPatch("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> PatchTournamentDetails(int id, [FromBody] JsonPatchDocument<TournamentDetailsUpdateDto> patchDoc)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             if (patchDoc == null)
                 return BadRequest();
 
-            var patchedDto = await _serviceManager.TournamentDetailsService.GetPatchedDtoAsync(id, patchDoc);
-
-            if (patchedDto == null)
-                return NotFound();
-
-            TryValidateModel(patchedDto);
-
-            if (!ModelState.IsValid)
-                return ValidationProblem(ModelState);
-
-            await _serviceManager.TournamentDetailsService.ApplyPatchedDtoAsync(id, patchedDto);
-
-            return NoContent();
+            try
+            {
+                await _serviceManager.TournamentDetailsService.PatchAsync(id, patchDoc);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         [HttpGet("search")]

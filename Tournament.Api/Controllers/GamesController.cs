@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Service.Contracts;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Tournament.Core.Dto;
@@ -12,127 +13,140 @@ using Tournament.Core.Interfaces;
 [ApiController]
 public class GameController : ControllerBase
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
+    private readonly IServiceManager _serviceManager;
 
-    public GameController(IUnitOfWork unitOfWork, IMapper mapper)
+    public GameController(IServiceManager serviceManager)
     {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
+        _serviceManager = serviceManager;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GameDto>>> GetGames(int tournamentId)
+    [ProducesResponseType(typeof(PagedResult<GameDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<GameDto>>> GetGames(
+        int tournamentId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10
+        )
     {
-        var games = await _unitOfWork.GameRepository.GetAllAsync(tournamentId, trackChanges:false);
-        var gamesDtos = _mapper.Map<IEnumerable<GameDto>>(games);
-        return Ok(gamesDtos);
+        Console.WriteLine(">>> GetGames endpoint was hit");
+        var pagedResult = await _serviceManager.GameService.GetAllAsync(tournamentId, trackChanges:false, page, pageSize);
+        if (!pagedResult.Items.Any())
+        {
+            return NotFound();
+        }
+        return Ok(pagedResult);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<GameDto>> GetGame(int id, int tournamentId)
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameDto>> GetGame(int id)
     {
-        var game = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:false);
-        if (game == null || game.TournamentId != tournamentId)
+        var gameDto = await _serviceManager.GameService.GetByIdAsync(id, trackChanges: false);
+        if (gameDto == null)
             return NotFound();
-        var gameDto = _mapper.Map<GameDto>(game);
+
         return Ok(gameDto);
     }
 
 
     [HttpPost]
-    public async Task<ActionResult<GameDto>> PostGame(int tournamentId, GameCreateDto gameCreateDto)
+    public async Task<ActionResult<GameDto>> PostGame([FromRoute] int tournamentId, [FromBody] GameCreateDto gameCreateDto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        var game = _mapper.Map<Game>(gameCreateDto);
-        game.TournamentId = tournamentId;
-        _unitOfWork.GameRepository.Create(game);
-        await _unitOfWork.CompleteAsync();
-
-        var gameDto = _mapper.Map<GameDto>(game);
-        return CreatedAtAction(nameof(GetGame), new { tournamentId = tournamentId, id = game.Id }, gameDto);
+        var newGame = new GameCreateDto
+        {
+            Title = gameCreateDto.Title,
+            Time = gameCreateDto.Time,
+            TournamentId = tournamentId
+        };
+        var gameDto = await _serviceManager.GameService.CreateAsync(newGame);
+        return CreatedAtAction(nameof(GetGame), new {tournamentId= gameDto.TournamentId, id = gameDto.Id }, gameDto);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutGame(int id, GameUpdateDto gameUpdateDto)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PutGame(int id, [FromBody] GameUpdateDto gameUpdateDto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        if (id != gameUpdateDto.Id)
+
+        try
         {
-            return BadRequest();
+            await _serviceManager.GameService.UpdateAsync(id, gameUpdateDto);
+            return NoContent();
         }
-
-        var existingGame = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:true);
-        if (existingGame == null)
+        catch (KeyNotFoundException ex)
         {
-            return NotFound();
+            return NotFound(ex.Message);
         }
-
-        var game = _mapper.Map(gameUpdateDto, existingGame);
-
-        await _unitOfWork.CompleteAsync();
-        return NoContent();
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteGame(int id)
     {
-        var existingGame = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:false);
-        if (existingGame == null)
+        try
+        {
+            await _serviceManager.GameService.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+
+    }
+
+    [HttpPatch("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> PatchGame(int id, [FromBody] JsonPatchDocument<GameUpdateDto> patchDoc)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (patchDoc == null)
+            return BadRequest();
+
+        try
+        {
+            await _serviceManager.GameService.PatchAsync(id, patchDoc);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(IEnumerable<GameDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<GameDto>>> SearchTournamentsByTitle(
+            [FromQuery] string? title,
+            [FromQuery] DateTime? date,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+            )
+    {
+        if (string.IsNullOrWhiteSpace(title) && !date.HasValue)
+            return BadRequest("At least one filter (title or date) must be provided.");
+
+        var pagedResult = await _serviceManager.GameService.SearchAsync(title, date, trackChanges: false);
+
+        if (pagedResult == null)
         {
             return NotFound();
         }
 
-        _unitOfWork.GameRepository.Delete(existingGame);
-        await _unitOfWork.CompleteAsync();
-
-        return NoContent();
-    }
-
-    [HttpPatch("{id}")]
-    public async Task<ActionResult> PatchGame(int tournamentId, int id, JsonPatchDocument<GameUpdateDto> patchDoc)
-    {
-        if (patchDoc == null)
-            return BadRequest();
-
-        var tournament = await _unitOfWork.TournamentDetailsRepository.GetByIdAsync(tournamentId, includeGames: false, trackChanges:true);
-        if (tournament == null)
-            return NotFound();
-
-        var gameToPatch = await _unitOfWork.GameRepository.GetByIdAsync(id, trackChanges:true);
-
-        if (gameToPatch == null || gameToPatch.TournamentId != tournamentId) 
-            return NotFound();
-
-        var dto = _mapper.Map<GameUpdateDto>(gameToPatch);
-
-        patchDoc.ApplyTo(dto, ModelState);
-
-        if (!TryValidateModel(dto))
-            return ValidationProblem(ModelState);
-
-        _mapper.Map(dto, gameToPatch);
-
-
-        await _unitOfWork.CompleteAsync();
-
-        return NoContent();
-    }
-
-    [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<GameDto>>> SearchTournamentsByTitle(int tournamentId, [FromQuery] string title)
-    {
-        if (string.IsNullOrWhiteSpace(title))
-            return BadRequest("Title parameter is required.");
-
-        var games = await _unitOfWork.GameRepository.SearchByTitleAsync(tournamentId, title, trackChanges: false);
-
-        if (games == null || !games.Any())
-            return NotFound();
-
-        var gameDtos = _mapper.Map<IEnumerable<GameDto>>(games);
-        return Ok(gameDtos);
+        return Ok(pagedResult);
     }
 }

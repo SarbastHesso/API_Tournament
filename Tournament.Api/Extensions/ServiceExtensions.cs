@@ -22,7 +22,7 @@ public static class ServiceExtensions
         {
             services.AddScoped<IServiceManager, ServiceManager>();
             services.AddScoped<ITournamentDetailsService, TournamentDetailsService>();
-            //services.AddScoped<IGameService, GameService>();
+            services.AddScoped<IGameService, GameService>();
 
             services.AddLazy<ITournamentDetailsService>();
             services.AddLazy<IGameService>();

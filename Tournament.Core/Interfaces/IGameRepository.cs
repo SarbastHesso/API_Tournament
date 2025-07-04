@@ -9,16 +9,9 @@ namespace Tournament.Core.Interfaces;
 
 public interface IGameRepository
 {
-    //Task<IEnumerable<Game>> GetAllAsync(int tournamentId);
-    //Task<Game?> GetByIdAsync(int id);
-    //Task<IEnumerable<Game?>> GetByTitleAsync(string title);
-    //Task<Game> AddAsync(Game game);
-    //Task<bool> UpdateAsync(Game game);
-    //Task<bool> DeleteAsync(int id);
-    //Task<bool> ExistsAsync(int id);
-    Task<IEnumerable<Game>> GetAllAsync(int tournamentId, bool trackChanges=false);
+    Task<IEnumerable<Game>> GetAllAsync(int? tournamentId, bool trackChanges=false);
     Task<Game?> GetByIdAsync(int id, bool trackChanges);
-    Task<IEnumerable<Game>> SearchByTitleAsync(int tournamentId, string title,  bool trackChanges=false);
     void Create(Game game);
     void Delete(Game game);
+    Task<IEnumerable<Game>> SearchAsync(string? title, DateTime? date, bool trackChanges = false);
 }
